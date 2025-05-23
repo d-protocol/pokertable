@@ -21,7 +21,7 @@ func DebugPrintTableGameOpened(t pokertable.Table) {
 		}
 	}
 
-	fmt.Printf("---------- 第 (%d) 手開局 ----------\n", t.State.GameCount)
+	fmt.Printf("---------- Game Hand (%d) Opening ----------\n", t.State.GameCount)
 	fmt.Println("[Time] ", timeString(time.Now().Unix()))
 	fmt.Println("[Table ID] ", t.ID)
 	fmt.Println("[Table StartAt] ", timeString(t.State.StartAt))
@@ -72,7 +72,7 @@ func DebugPrintTableGameOpened(t pokertable.Table) {
 	}
 
 	fmt.Println("[Blind Data]")
-	blindLevel := "中場休息"
+	blindLevel := "Break Period"
 	if t.State.BlindState.Level != -1 {
 		blindLevel = strconv.Itoa(t.State.BlindState.Level)
 	}
@@ -109,7 +109,7 @@ func DebugPrintTableGameSettled(t pokertable.Table) {
 		return ""
 	}
 
-	fmt.Printf("---------- 第 (%d) 手結算 ----------\n", t.State.GameCount)
+	fmt.Printf("---------- Game Hand (%d) Settlement ----------\n", t.State.GameCount)
 	fmt.Println("[Time] ", timeString(time.Now().Unix()))
 	result := t.State.GameState.Result
 	for _, player := range result.Players {

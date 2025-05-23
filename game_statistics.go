@@ -22,48 +22,48 @@ const (
 )
 
 type TablePlayerGameStatistics struct {
-	ActionTimes int    `json:"action_times"` // 每手下注動作總次數
-	RaiseTimes  int    `json:"raise_times"`  // 每手加注總次數
-	CallTimes   int    `json:"call_times"`   // 每手跟注總次數
-	CheckTimes  int    `json:"check_times"`  // 每手過牌總次數
-	IsFold      bool   `json:"is_fold"`      // 每手是否蓋牌
-	FoldRound   string `json:"fold_round"`   // 每手蓋牌回合
+	ActionTimes int    `json:"action_times"`
+	RaiseTimes  int    `json:"raise_times"`
+	CallTimes   int    `json:"call_times"`
+	CheckTimes  int    `json:"check_times"`
+	IsFold      bool   `json:"is_fold"`
+	FoldRound   string `json:"fold_round"`
 
 	// preflop: VPIP
-	IsVPIPChance bool `json:"is_vpip_chance"` // 每手翻前 VPIP 機會
-	IsVPIP       bool `json:"is_vpip"`        // 每手翻前是否有過 VPIP
+	IsVPIPChance bool `json:"is_vpip_chance"`
+	IsVPIP       bool `json:"is_vpip"`
 
 	// preflop: PFR
-	IsPFRChance bool `json:"is_pfr_chance"` // 每手翻前 PFR 機會
-	IsPFR       bool `json:"is_pfr"`        // 每手翻前是否有過 PFR
+	IsPFRChance bool `json:"is_pfr_chance"`
+	IsPFR       bool `json:"is_pfr"`
 
 	// preflop: ATS
-	IsATSChance bool `json:"is_ats_chance"` // 每手翻前 ATS 機會
-	IsATS       bool `json:"is_ats"`        // 每手翻前否有過 ATS
+	IsATSChance bool `json:"is_ats_chance"`
+	IsATS       bool `json:"is_ats"`
 
 	// preflop: 3-Bet
-	Is3BChance bool `json:"is_3b_chance"` // 每手翻前 3-Bet 機會
-	Is3B       bool `json:"is_3b"`        // 每手翻前否有過 3-Bet
+	Is3BChance bool `json:"is_3b_chance"`
+	Is3B       bool `json:"is_3b"`
 
 	// preflop: Ft3B
-	IsFt3BChance bool `json:"is_ft3b_chance"` // 每手翻前 Ft3B 機會
-	IsFt3B       bool `json:"is_ft3b"`        // 每手翻前否有過 Ft3B
+	IsFt3BChance bool `json:"is_ft3b_chance"`
+	IsFt3B       bool `json:"is_ft3b"`
 
 	// flop: C/R TODO: flop/turn/river 都要
-	IsCheckRaiseChance bool `json:"is_check_raise_chance"` // 每手翻前 C/R 機會
-	IsCheckRaise       bool `json:"is_check_raise"`        // 每手翻前否有過 C/R
+	IsCheckRaiseChance bool `json:"is_check_raise_chance"`
+	IsCheckRaise       bool `json:"is_check_raise"`
 
 	// flop: C-Bet
-	IsCBetChance bool `json:"is_c_bet_chance"` // 每手翻前 C-Bet 機會
-	IsCBet       bool `json:"is_c_bet"`        // 每手翻前否有過 C-Bet
+	IsCBetChance bool `json:"is_c_bet_chance"`
+	IsCBet       bool `json:"is_c_bet"`
 
 	// flop: FtCB
-	IsFtCBChance bool `json:"is_ftcb_chance"` // 每手翻前 FtCB 機會
-	IsFtCB       bool `json:"is_ftcb"`        // 每手翻前否有過 FtCB
+	IsFtCBChance bool `json:"is_ftcb_chance"`
+	IsFtCB       bool `json:"is_ftcb"`
 
 	// settle
-	ShowdownWinningChance bool `json:"showdown_winning_chance"` // 每手結算時 Showdown Winning 機會
-	IsShowdownWinning     bool `json:"is_showdown_winning"`     // 每手結算時是否 Showdown Winning
+	ShowdownWinningChance bool `json:"showdown_winning_chance"`
+	IsShowdownWinning     bool `json:"is_showdown_winning"`
 }
 
 func NewPlayerGameStatistics() TablePlayerGameStatistics {
@@ -129,7 +129,6 @@ func (te *tableEngine) refreshThreeBet(playerState *TablePlayerState, playerIdx 
 	}
 
 	if playerState.GameStatistics.Is3BChance {
-		// 整桌只會有一個玩家有 3-Bet 標籤
 		for i := 0; i < len(te.table.State.PlayerStates); i++ {
 			if i == playerIdx {
 				te.table.State.PlayerStates[i].GameStatistics.Is3B = true
@@ -167,34 +166,28 @@ func (te *tableEngine) updateCurrentPlayerGameStatistics(gs *pokerlib.GameState)
 			currentPlayer.GameStatistics.IsATSChance = true
 		}
 
-		// 計算 3-Bet
 		if te.is3BChance(currentGamePlayerIdx, gs) {
 			currentPlayer.GameStatistics.Is3BChance = true
 		}
 
-		// 計算 Ft3B
 		if te.IsFt3BChance(currentGamePlayerIdx, te.table.State.PlayerStates, gs) {
 			currentPlayer.GameStatistics.IsFt3BChance = true
 		}
 
-		// 計算 C/R
 		if te.isCheckRaiseChance(currentGamePlayerIdx, gs) {
 			currentPlayer.GameStatistics.IsCheckRaiseChance = true
 		}
 
-		// 計算 C-Bet
 		if te.isCBetChance(currentGamePlayerIdx, gs) {
 			currentPlayer.GameStatistics.IsCBetChance = true
 		}
 
-		// 計算 FtCB
 		if te.isFtCBChance(currentGamePlayerIdx, te.table.State.PlayerStates, gs) {
 			currentPlayer.GameStatistics.IsFtCBChance = true
 		}
 	}
 }
 
-// isVPIPChance: preflop 時還沒入池 (not VPIP)
 func (te *tableEngine) isVPIPChance(gamePlayerIdx int, gs *pokerlib.GameState) bool {
 	if !te.validateGameStatisticGameState(gamePlayerIdx, gs) {
 		return false

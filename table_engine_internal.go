@@ -92,7 +92,7 @@ func (te *tableEngine) updateCurrentActionEndAt(event pokerlib.GameEvent, gs *po
 }
 
 func (te *tableEngine) shouldAutoGameOpen() bool {
-	// 自動開下一手條件: status = TableStateStatus_TableGameStandby 且有籌碼玩家 >= 最小開打人數
+	// Auto-open next hand condition: status = TableStateStatus_TableGameStandby and alive players >= minimum required players
 	return te.table.State.Status == TableStateStatus_TableGameStandby &&
 		len(te.table.AlivePlayers()) >= te.table.Meta.TableMinPlayerCount
 }
@@ -102,7 +102,7 @@ func (te *tableEngine) onGameClosed() error {
 	return te.continueGame(alivePlayers)
 }
 
-func (te *tableEngine) calcLeavePlayers(status TableStateStatus, leavePlayerIDs []string, currentPlayers []*TablePlayerState, tableMaxSeatCount int) ([]*TablePlayerState, []int, []int) {
+func (te *tableEngine) calcLeavePlayers(status TableStateStatus, leavePlayerIDs []string, currentPlayers []*TablePlayerState, tableMaxSeatCount int) ([]*TablePlayerState, map[int]int, []int) {
 	// calc delete target players in PlayerStates
 	newPlayerStates := make([]*TablePlayerState, 0)
 	for _, player := range currentPlayers {
@@ -209,8 +209,11 @@ func (te *tableEngine) batchAddPlayers(players []JoinPlayer) error {
 	}
 
 	// update table state
-	newSeatMap := make([]int, len(te.table.State.SeatMap))
-	copy(newSeatMap, te.table.State.SeatMap)
+	newSeatMap := make(map[int]int)
+	for k, v := range te.table.State.SeatMap {
+		newSeatMap[k] = v
+	}
+
 	newPlayers := make([]*TablePlayerState, 0)
 	for _, player := range players {
 		// add new player
@@ -238,7 +241,7 @@ func (te *tableEngine) batchAddPlayers(players []JoinPlayer) error {
 	te.table.State.SeatMap = newSeatMap
 	te.table.State.PlayerStates = append(te.table.State.PlayerStates, newPlayers...)
 
-	// 如果時間到了還沒有入座則自動入座
+	// If time is up and players haven't joined, auto-join them
 	te.playersAutoIn()
 
 	// emit events
@@ -267,7 +270,7 @@ func (te *tableEngine) playersAutoIn() {
 		isInCount := 0
 		alivePlayers := 0
 		for playerIdx, player := range te.table.State.PlayerStates {
-			// 如果時間到了還沒有入座則自動入座
+			// If time is up and player is not seated, auto-seat them
 			if !player.IsIn {
 				te.PlayerJoin(player.PlayerID)
 			}
@@ -281,7 +284,7 @@ func (te *tableEngine) playersAutoIn() {
 			}
 		}
 
-		// 等所有玩家 is_in 且大於開打人數，且未開始 game，則開始遊戲
+		// Wait for all players to be in and more than min players, and game not started, then start game
 		gameStartingStatuses := []TableStateStatus{
 			TableStateStatus_TableGameOpened,
 			TableStateStatus_TableGamePlaying,
@@ -289,10 +292,10 @@ func (te *tableEngine) playersAutoIn() {
 			TableStateStatus_TableGameStandby,
 		}
 		isGameRunning := funk.Contains(gameStartingStatuses, te.table.State.Status)
-		// 非中場休息，有活著的玩家，且未開始遊戲
+		// Not in break, have alive players, and game not started
 		if isInCount >= 2 && alivePlayers >= 2 && !isGameRunning && te.table.State.BlindState.Level > 0 && te.table.State.GameCount == 0 {
-			// 尚未開第一手，StartTableGame (MTT Only, CT 是由 competition 決定開始)
-			// TODO 是否考慮 CT 是否有暫停
+			// First hand not started, StartTableGame (MTT Only, CT is decided by competition)
+			// TODO Consider CT pausing
 			if te.table.Meta.Mode == CompetitionMode_MTT {
 				if err := te.StartTableGame(); err != nil {
 					te.emitErrorEvent("StartTableGame", "", err)
@@ -304,7 +307,7 @@ func (te *tableEngine) playersAutoIn() {
 	te.rg.ResetParticipants()
 	for playerIdx := range te.table.State.PlayerStates {
 		if !te.table.State.PlayerStates[playerIdx].IsIn {
-			// 新加入的玩家才要放到 ready group 做處理
+			// Only newly joined players are added to ready group
 			te.rg.Add(int64(playerIdx), false)
 		}
 	}
@@ -320,19 +323,18 @@ func (te *tableEngine) batchRemovePlayers(playerIDs []string) error {
 	return te.sm.RemoveSeats(playerIDs)
 }
 
-func (te *tableEngine) refreshNextBBOrderPlayerIDs(currentBBSeatID, tableMaxSeatCount int, players []*TablePlayerState, seatMap []int) []string {
+func (te *tableEngine) refreshNextBBOrderPlayerIDs(currentBBSeatID, tableMaxSeatCount int, players []*TablePlayerState, seatMap map[int]int) []string {
 	nextBBOrderPlayerIDs := make([]string, 0)
 	for i := currentBBSeatID + 1; i <= tableMaxSeatCount+currentBBSeatID; i++ {
 		newBBSeatID := i % tableMaxSeatCount
-		playerIdx := seatMap[newBBSeatID]
-		if playerIdx >= 0 && players[playerIdx].Bankroll > 0 {
+		if playerIdx, exists := seatMap[newBBSeatID]; exists && playerIdx >= 0 && playerIdx < len(players) && players[playerIdx].Bankroll > 0 {
 			nextBBOrderPlayerIDs = append(nextBBOrderPlayerIDs, players[playerIdx].PlayerID)
 		}
 	}
 	return nextBBOrderPlayerIDs
 }
 
-func (te *tableEngine) calcGamePlayerIndexes(rule string, maxSeatCount, currentDealerSeatID, currentSBSeatID, currentBBSeatID int, seatMap []int, players []*TablePlayerState) []int {
+func (te *tableEngine) calcGamePlayerIndexes(rule string, maxSeatCount, currentDealerSeatID, currentSBSeatID, currentBBSeatID int, seatMap map[int]int, players []*TablePlayerState) []int {
 	playerLen := len(players)
 	gamePlayerIndexes := make([]int, 0)
 	playerPositions := make(map[int][]string) // key: player_index, value: positions

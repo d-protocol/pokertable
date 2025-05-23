@@ -3,7 +3,7 @@ module github.com/d-protocol/pokertable
 go 1.19
 
 require (
-	github.com/d-protocol/pokerlib v0.0.0-00010101000000-000000000000
+	github.com/d-protocol/pokerlib v0.0.0-20250523000935-ab2782966ad9
 	github.com/d-protocol/syncsaga v0.0.0-20250522234550-88c17af8cd6c
 	github.com/d-protocol/timebank v0.0.0-20250522234202-39608dfc16ba
 	github.com/google/uuid v1.3.0
@@ -17,4 +17,4 @@ require (
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
 
-// replace github.com/d-protocol/pokerlib => ../pokerlib
+replace github.com/d-protocol/pokerlib => ../pokerlib

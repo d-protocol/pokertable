@@ -5,8 +5,8 @@ import (
 	"github.com/thoas/go-funk"
 )
 
-func NewDefaultSeatMap(seatCount int) []int {
-	seatMap := make([]int, seatCount)
+func NewDefaultSeatMap(seatCount int) map[int]int {
+	seatMap := make(map[int]int)
 	for seatIdx := 0; seatIdx < seatCount; seatIdx++ {
 		seatMap[seatIdx] = seat_manager.UnsetSeatID
 	}

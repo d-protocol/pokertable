@@ -28,47 +28,47 @@ type TableEngineOpt func(*tableEngine)
 
 type TableEngine interface {
 	// Events
-	OnTableUpdated(fn func(table *Table))                                                                              // 桌次更新事件監聽器
-	OnTableErrorUpdated(fn func(table *Table, err error))                                                              // 錯誤更新事件監聽器
-	OnTableStateUpdated(fn func(event string, table *Table))                                                           // 桌次狀態監聽器
-	OnTablePlayerStateUpdated(fn func(competitionID, tableID string, playerState *TablePlayerState))                   // 桌次玩家狀態監聽器
-	OnTablePlayerReserved(fn func(competitionID, tableID string, playerState *TablePlayerState))                       // 桌次玩家確認座位監聽器
-	OnGamePlayerActionUpdated(fn func(gameAction TablePlayerGameAction))                                               // 遊戲玩家動作更新事件監聽器
-	OnAutoGameOpenEnd(fn func(competitionID, tableID string))                                                          // 自動開桌結束事件監聽器
-	OnReadyOpenFirstTableGame(fn func(competitionID, tableID string, gameCount int, playerStates []*TablePlayerState)) // 開始第一手遊戲監聽器
+	OnTableUpdated(fn func(table *Table))
+	OnTableErrorUpdated(fn func(table *Table, err error))
+	OnTableStateUpdated(fn func(event string, table *Table))
+	OnTablePlayerStateUpdated(fn func(competitionID, tableID string, playerState *TablePlayerState))
+	OnTablePlayerReserved(fn func(competitionID, tableID string, playerState *TablePlayerState))
+	OnGamePlayerActionUpdated(fn func(gameAction TablePlayerGameAction))
+	OnAutoGameOpenEnd(fn func(competitionID, tableID string))
+	OnReadyOpenFirstTableGame(fn func(competitionID, tableID string, gameCount int, playerStates []*TablePlayerState))
 
 	// Other Actions
 	ReleaseTable() error
 
 	// Table Actions
-	GetTable() *Table                                                                             // 取得桌次
-	GetGame() Game                                                                                // 取得遊戲引擎
-	CreateTable(tableSetting TableSetting) (*Table, error)                                        // 建立桌
-	PauseTable() error                                                                            // 暫停桌
-	CloseTable() error                                                                            // 關閉桌
-	StartTableGame() error                                                                        // 開打遊戲
-	UpdateBlind(level int, ante, dealer, sb, bb int64)                                            // 更新當前盲注資訊
-	SetUpTableGame(gameCount int, participants map[string]int)                                    // 設定某手遊戲
-	UpdateTablePlayers(joinPlayers []JoinPlayer, leavePlayerIDs []string) (map[string]int, error) // 更新桌上玩家數量
+	GetTable() *Table                                                                             // Get table
+	GetGame() Game                                                                                // Get game engine
+	CreateTable(tableSetting TableSetting) (*Table, error)                                        // Create table
+	PauseTable() error                                                                            // Pause table
+	CloseTable() error                                                                            // Close table
+	StartTableGame() error                                                                        // Start table game
+	UpdateBlind(level int, ante, dealer, sb, bb int64)                                            // Update current blind info
+	SetUpTableGame(gameCount int, participants map[string]int)                                    // Setup game
+	UpdateTablePlayers(joinPlayers []JoinPlayer, leavePlayerIDs []string) (map[string]int, error) // Update table players
 
 	// Player Table Actions
-	PlayerReserve(joinPlayer JoinPlayer) error     // 玩家確認座位
-	PlayerJoin(playerID string) error              // 玩家入桌
-	PlayerSettlementFinish(playerID string) error  // 玩家結算完成
-	PlayerRedeemChips(joinPlayer JoinPlayer) error // 增購籌碼
-	PlayersLeave(playerIDs []string) error         // 玩家們離桌
+	PlayerReserve(joinPlayer JoinPlayer) error     // Player reserve seat
+	PlayerJoin(playerID string) error              // Player join table
+	PlayerSettlementFinish(playerID string) error  // Player settlement complete
+	PlayerRedeemChips(joinPlayer JoinPlayer) error // Player redeem chips
+	PlayersLeave(playerIDs []string) error         // Players leave table
 
 	// Player Game Actions
-	PlayerExtendActionDeadline(playerID string, duration int) (int64, error) // 延長玩家動作結束時間
-	PlayerReady(playerID string) error                                       // 玩家準備動作完成
-	PlayerPay(playerID string, chips int64) error                            // 玩家付籌碼
-	PlayerBet(playerID string, chips int64) error                            // 玩家下注
-	PlayerRaise(playerID string, chipLevel int64) error                      // 玩家加注
-	PlayerCall(playerID string) error                                        // 玩家跟注
-	PlayerAllin(playerID string) error                                       // 玩家全下
-	PlayerCheck(playerID string) error                                       // 玩家過牌
-	PlayerFold(playerID string) error                                        // 玩家棄牌
-	PlayerPass(playerID string) error                                        // 玩家 Pass
+	PlayerExtendActionDeadline(playerID string, duration int) (int64, error) // Extend player action deadline
+	PlayerReady(playerID string) error                                       // Player ready
+	PlayerPay(playerID string, chips int64) error                            // Player pay
+	PlayerBet(playerID string, chips int64) error                            // Player bet
+	PlayerRaise(playerID string, chipLevel int64) error                      // Player raise
+	PlayerCall(playerID string) error                                        // Player call
+	PlayerAllin(playerID string) error                                       // Player all-in
+	PlayerCheck(playerID string) error                                       // Player check
+	PlayerFold(playerID string) error                                        // Player fold
+	PlayerPass(playerID string) error                                        // Player pass
 }
 
 type tableEngine struct {
@@ -180,7 +180,6 @@ func (te *tableEngine) CreateTable(tableSetting TableSetting) (*Table, error) {
 	te.ogm = open_game_manager.NewOpenGameManager(open_game_manager.OpenGameOption{
 		Timeout: 2,
 		OnOpenGameReady: func(state open_game_manager.OpenGameState) {
-			// 小於等於一個人，不開局
 			if len(state.Participants) <= 1 {
 				return
 			}
@@ -201,9 +200,9 @@ func (te *tableEngine) CreateTable(tableSetting TableSetting) (*Table, error) {
 	table.Meta = tableSetting.Meta
 
 	// configure state
-	status := TableStateStatus_TableCreated
+	status := TableStateStatus(TableStateStatus_TableCreated)
 	if tableSetting.Blind.Level == -1 {
-		status = TableStateStatus_TablePausing
+		status = TableStateStatus(TableStateStatus_TablePausing)
 	}
 	state := TableState{
 		GameCount:            0,
@@ -243,8 +242,8 @@ func (te *tableEngine) CreateTable(tableSetting TableSetting) (*Table, error) {
 }
 
 /*
-PauseTable 暫停桌
-  - 適用時機: 外部暫停自動開桌
+PauseTable pauses the table
+  - Use case: External pausing of auto game opening
 */
 func (te *tableEngine) PauseTable() error {
 	te.table.State.Status = TableStateStatus_TablePausing
@@ -253,8 +252,8 @@ func (te *tableEngine) PauseTable() error {
 }
 
 /*
-CloseTable 關閉桌次
-  - 適用時機: 強制關閉、逾期自動關閉、正常關閉
+CloseTable closes the table
+  - Use cases: Forced close, auto close due to timeout, normal close
 */
 func (te *tableEngine) CloseTable() error {
 	te.table.State.Status = TableStateStatus_TableClosed
@@ -271,11 +270,11 @@ func (te *tableEngine) StartTableGame() error {
 		return nil
 	}
 
-	// 更新開始時間
+	// Update start time
 	te.table.State.StartAt = time.Now().Unix()
 	te.emitEvent("StartTableGame", "")
 
-	//  開局
+	// Start the game
 	te.emitReadyOpenFirstTableGame(te.table.State.GameCount, te.table.State.PlayerStates)
 	return nil
 
@@ -290,18 +289,18 @@ func (te *tableEngine) UpdateBlind(level int, ante, dealer, sb, bb int64) {
 }
 
 /*
-SetUpTableGame 設定某手遊戲
-  - 適用時機:
-    1. Start game 之後，準備開第一手
-    2. 每手結束，在 Continue 階段，準備開下一手
+SetUpTableGame sets up a specific hand
+  - Use cases:
+    1. After game start, preparing the first hand
+    2. At the end of each hand, in the Continue phase, preparing the next hand
 */
 func (te *tableEngine) SetUpTableGame(gameCount int, participants map[string]int) {
 	te.ogm.Setup(gameCount, participants)
 }
 
 /*
-UpdateTablePlayers 更新桌上玩家數量
-  - 適用時機: 每手遊戲結束後
+UpdateTablePlayers updates the number of players at the table
+  - Use case: After each hand ends
 */
 func (te *tableEngine) UpdateTablePlayers(joinPlayers []JoinPlayer, leavePlayerIDs []string) (map[string]int, error) {
 	te.lock.Lock()
@@ -332,8 +331,8 @@ func (te *tableEngine) UpdateTablePlayers(joinPlayers []JoinPlayer, leavePlayerI
 }
 
 /*
-PlayerReserve 玩家確認座位
-  - 適用時機: 玩家帶籌碼報名或補碼
+PlayerReserve player confirms seat
+  - Use case: Player brings chips to register or rebuys
 */
 func (te *tableEngine) PlayerReserve(joinPlayer JoinPlayer) error {
 	te.lock.Lock()
@@ -369,8 +368,8 @@ func (te *tableEngine) PlayerReserve(joinPlayer JoinPlayer) error {
 }
 
 /*
-PlayerJoin 玩家入桌
-  - 適用時機: 玩家已經確認座位後入桌
+PlayerJoin player joins the table
+  - Use case: When a player has confirmed a seat and joins the table
 */
 func (te *tableEngine) PlayerJoin(playerID string) error {
 	playerIdx := te.table.FindPlayerIdx(playerID)
@@ -388,12 +387,12 @@ func (te *tableEngine) PlayerJoin(playerID string) error {
 
 	te.table.State.PlayerStates[playerIdx].IsIn = true
 
-	// 有設定 ReadyGroup，且玩家尚未 Ready 時，則 Ready
+	// If ReadyGroup is set and player is not ready, mark as ready
 	if isReady, exist := te.rg.GetParticipantStates()[int64(playerIdx)]; exist && !isReady {
 		te.rg.Ready(int64(playerIdx))
 	}
 
-	// 更新 seat manager
+	// Update seat manager
 	if err := te.sm.JoinPlayers([]string{playerID}); err != nil {
 		return err
 	}
@@ -403,8 +402,8 @@ func (te *tableEngine) PlayerJoin(playerID string) error {
 }
 
 /*
-PlayerSettlementFinish 玩家結算完成
-  - 適用時機: 玩家已經看完結算動畫
+PlayerSettlementFinish player settlement completed
+  - Use case: Player has watched the settlement animation
 */
 func (te *tableEngine) PlayerSettlementFinish(playerID string) error {
 	playerIdx := te.table.FindPlayerIdx(playerID)
@@ -422,8 +421,8 @@ func (te *tableEngine) PlayerSettlementFinish(playerID string) error {
 }
 
 /*
-PlayerRedeemChips 增購籌碼
-  - 適用時機: 增購
+PlayerRedeemChips buy-in additional chips
+  - Use case: Rebuy
 */
 func (te *tableEngine) PlayerRedeemChips(joinPlayer JoinPlayer) error {
 	// find player index in PlayerStates
@@ -441,11 +440,11 @@ func (te *tableEngine) PlayerRedeemChips(joinPlayer JoinPlayer) error {
 }
 
 /*
-PlayerLeave 玩家們離開桌次
-  - 適用時機:
-  - CT 退桌 (玩家有籌碼)
-  - CT 放棄補碼 (玩家沒有籌碼)
-  - CT 停止買入後被淘汰
+PlayersLeave players leave the table
+  - Use cases:
+  - CT: leaving table (player has chips)
+  - CT: giving up rebuy (player has no chips)
+  - CT: eliminated after stopping buy-in
 */
 func (te *tableEngine) PlayersLeave(playerIDs []string) error {
 	te.lock.Lock()
@@ -462,8 +461,8 @@ func (te *tableEngine) PlayersLeave(playerIDs []string) error {
 }
 
 /*
-PlayerExtendActionDeadline 延長玩家動作結束時間
-  - 適用時機: 當玩家動作時間計時器開始時
+PlayerExtendActionDeadline extends the player's action deadline
+  - Use case: When player action timer starts
 */
 func (te *tableEngine) PlayerExtendActionDeadline(playerID string, duration int) (int64, error) {
 	endAt := time.Unix(te.table.State.CurrentActionEndAt, 0)

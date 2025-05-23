@@ -19,19 +19,19 @@ func (te *tableEngine) tableGameOpen() error {
 		return nil
 	}
 
-	// 開局
+	// Start the game
 	newTable, err := te.openGame(te.table)
 
 	retry := 10
 	if err != nil {
-		// 30 秒內嘗試重新開局
+		// Retry opening the game within 30 seconds
 		if errors.Is(err, ErrTableOpenGameFailed) {
 			reopened := false
 
 			for i := 0; i < retry; i++ {
 				time.Sleep(time.Second * 3)
 
-				// 已經開始新的一手遊戲，不做任何事
+				// Game already started, do nothing
 				gameStartingStatuses := []TableStateStatus{
 					TableStateStatus_TableGameOpened,
 					TableStateStatus_TableGamePlaying,
@@ -48,7 +48,7 @@ func (te *tableEngine) tableGameOpen() error {
 						fmt.Printf("table (%s): failed to open game. retry %d time(s)...\n", te.table.ID, i+1)
 						continue
 					} else if errors.Is(err, ErrTableOpenGameFailedInBlindBreakingLevel) {
-						// 已經中場休息，不做任何事
+						// Already in a break, do nothing
 						fmt.Printf("table (%s): failed to open game when blind level is negative\n", te.table.ID)
 						return nil
 					} else {
@@ -64,7 +64,7 @@ func (te *tableEngine) tableGameOpen() error {
 				return err
 			}
 		} else if errors.Is(err, ErrTableOpenGameFailedInBlindBreakingLevel) {
-			// 已經中場休息，不做任何事
+			// Already in a break, do nothing
 			fmt.Printf("table (%s): failed to open game when blind level is negative\n", te.table.ID)
 			return nil
 		} else {
@@ -74,7 +74,7 @@ func (te *tableEngine) tableGameOpen() error {
 	te.table = newTable
 	te.emitEvent("tableGameOpen", "")
 
-	// 啟動本手遊戲引擎
+	// Start the game engine for this hand
 	return te.startGame()
 }
 
@@ -94,10 +94,10 @@ func (te *tableEngine) openGame(oldTable *Table) (*Table, error) {
 		return oldTable, err
 	}
 
-	// Step 3: 更新狀態
+	// Step 3: Update status
 	cloneTable.State.Status = TableStateStatus_TableGameOpened
 
-	// Step 4: 計算座位
+	// Step 4: Calculate seats
 	if !te.sm.IsInitPositions() {
 		if err := te.sm.InitPositions(true); err != nil {
 			return oldTable, ErrTableOpenGameFailed
@@ -108,7 +108,7 @@ func (te *tableEngine) openGame(oldTable *Table) (*Table, error) {
 		}
 	}
 
-	// Step 5: 更新參與本手的玩家資訊
+	// Step 5: Update information about players participating in this hand
 	// update player is_participated
 	for i := 0; i < len(cloneTable.State.PlayerStates); i++ {
 		player := cloneTable.State.PlayerStates[i]
@@ -133,7 +133,7 @@ func (te *tableEngine) openGame(oldTable *Table) (*Table, error) {
 	// update player positions
 	te.updatePlayerPositions(cloneTable.Meta.TableMaxSeatCount, cloneTable.State.PlayerStates)
 
-	// Step 6: 更新桌次狀態 (GameCount & 當前 Dealer & BB 位置)
+	// Step 6: Update table state (GameCount & current Dealer & BB positions)
 	cloneTable.State.GameCount = cloneTable.State.GameCount + 1
 	cloneTable.State.CurrentDealerSeat = te.sm.CurrentDealerSeatID()
 	cloneTable.State.CurrentSBSeat = te.sm.CurrentSBSeatID()
@@ -235,7 +235,7 @@ func (te *tableEngine) startGame() error {
 func (te *tableEngine) settleGame() []*TablePlayerState {
 	te.table.State.Status = TableStateStatus_TableGameSettled
 
-	// 計算攤牌勝率用
+	// Calculate showdown winning chance
 	notFoldCount := 0
 	for _, result := range te.table.State.GameState.Result.Players {
 		p := te.table.State.GameState.GetPlayer(result.Idx)
@@ -244,7 +244,7 @@ func (te *tableEngine) settleGame() []*TablePlayerState {
 		}
 	}
 
-	// 計算贏家
+	// Calculate winners
 	rank := settlement.NewRank()
 	for _, player := range te.table.State.GameState.Players {
 		if !player.Fold {
@@ -264,14 +264,14 @@ func (te *tableEngine) settleGame() []*TablePlayerState {
 		winnerPlayerIndexes[playerIdx] = true
 	}
 
-	// 把玩家輸贏籌碼更新到 Bankroll
+	// Update player chips based on win/loss to their bankroll
 	alivePlayers := make([]*TablePlayerState, 0)
 	for _, player := range te.table.State.GameState.Result.Players {
 		playerIdx := te.table.State.GamePlayerIndexes[player.Idx]
 		playerState := te.table.State.PlayerStates[playerIdx]
 		playerState.Bankroll = player.Final
 
-		// 更新玩家攤牌勝率
+		// Update player showdown winning chance
 		p := te.table.State.GameState.GetPlayer(player.Idx)
 		if p != nil && !p.Fold && notFoldCount > 1 {
 			playerState.GameStatistics.ShowdownWinningChance = true
@@ -287,7 +287,7 @@ func (te *tableEngine) settleGame() []*TablePlayerState {
 		}
 	}
 
-	// 更新 NextBBOrderPlayerIDs (移除沒有籌碼的玩家)
+	// Update NextBBOrderPlayerIDs (remove players without chips)
 	te.table.State.NextBBOrderPlayerIDs = te.refreshNextBBOrderPlayerIDs(te.sm.CurrentBBSeatID(), te.table.Meta.TableMaxSeatCount, te.table.State.PlayerStates, te.table.State.SeatMap)
 
 	te.emitEvent("SettleTableGameResult", "")
@@ -322,7 +322,7 @@ func (te *tableEngine) continueGame(alivePlayers []*TablePlayerState) error {
 	var nextMoveInterval int
 	var nextMoveHandler func() error
 
-	// 桌次時間到了則不自動開下一手 (CT/Cash)
+	// Table time is up, do not automatically open the next hand (CT/Cash)
 	ctMTTAutoGameOpenEnd := false
 	if te.table.Meta.Mode == CompetitionMode_CT || te.table.Meta.Mode == CompetitionMode_Cash {
 		tableEndAt := time.Unix(te.table.State.StartAt, 0).Add(time.Second * time.Duration(te.table.Meta.MaxDuration)).Unix()
@@ -339,26 +339,25 @@ func (te *tableEngine) continueGame(alivePlayers []*TablePlayerState) error {
 	} else {
 		nextMoveInterval = te.options.GameContinueInterval
 		nextMoveHandler = func() error {
-			// 如果在 Interval 這期間，該桌已關閉，則不繼續動作
+			// If the table is closed during the Interval, do not continue
 			if te.table.State.Status == TableStateStatus_TableClosed {
 				return nil
 			}
 
-			// 如果在 Interval 這期間，該桌已釋放，則不繼續動作
+			// If the table is released during the Interval, do not continue
 			if te.isReleased {
 				return nil
 			}
 
-			// 桌次接續動作: pause or open
+			// Table continuation: pause or open
 			if te.table.ShouldPause() {
-				// 暫停處理
+				// Pause processing
 				te.table.State.Status = TableStateStatus_TablePausing
 				te.emitEvent("ContinueGame -> Pause", "")
 				te.emitTableStateEvent(TableStateEvent_StatusUpdated)
 			} else {
 				if te.shouldAutoGameOpen() {
-					// fmt.Println("[DEBUG#continueGame] delay -> TableGameOpen")
-					// return te.TableGameOpen()
+					// Setup next game
 					nextGameCount := te.table.State.GameCount + 1
 					participants := make(map[string]int)
 					for idx, player := range alivePlayers {
