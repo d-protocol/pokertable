@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/d-protocol/pokerface"
+	"github.com/d-protocol/pokerlib"
 	"github.com/d-protocol/pokerlib/settlement"
 	"github.com/thoas/go-funk"
 )
@@ -147,12 +147,12 @@ func (te *tableEngine) startGame() error {
 	blind := te.table.State.BlindState
 
 	// create game options
-	opts := pokerface.NewStardardGameOptions()
-	opts.Deck = pokerface.NewStandardDeckCards()
+	opts := pokerlib.NewStardardGameOptions()
+	opts.Deck = pokerlib.NewStandardDeckCards()
 
 	if rule == CompetitionRule_ShortDeck {
-		opts = pokerface.NewShortDeckGameOptions()
-		opts.Deck = pokerface.NewShortDeckCards()
+		opts = pokerlib.NewShortDeckGameOptions()
+		opts.Deck = pokerlib.NewShortDeckCards()
 	} else if rule == CompetitionRule_Omaha {
 		opts.HoleCardsCount = 4
 		opts.RequiredHoleCardsCount = 2
@@ -160,17 +160,17 @@ func (te *tableEngine) startGame() error {
 
 	// preparing blind
 	opts.Ante = blind.Ante
-	opts.Blind = pokerface.BlindSetting{
+	opts.Blind = pokerlib.BlindSetting{
 		Dealer: blind.Dealer,
 		SB:     blind.SB,
 		BB:     blind.BB,
 	}
 
 	// preparing players
-	playerSettings := make([]*pokerface.PlayerSetting, 0)
+	playerSettings := make([]*pokerlib.PlayerSetting, 0)
 	for _, playerIdx := range te.table.State.GamePlayerIndexes {
 		player := te.table.State.PlayerStates[playerIdx]
-		playerSettings = append(playerSettings, &pokerface.PlayerSetting{
+		playerSettings = append(playerSettings, &pokerlib.PlayerSetting{
 			Bankroll:  player.Bankroll,
 			Positions: player.Positions,
 		})
@@ -182,14 +182,14 @@ func (te *tableEngine) startGame() error {
 
 	// create game
 	te.game = NewGame(te.gameBackend, opts)
-	te.game.OnGameStateUpdated(func(gs *pokerface.GameState) {
+	te.game.OnGameStateUpdated(func(gs *pokerlib.GameState) {
 		te.updateGameState(gs)
 	})
-	te.game.OnGameErrorUpdated(func(gs *pokerface.GameState, err error) {
+	te.game.OnGameErrorUpdated(func(gs *pokerlib.GameState, err error) {
 		te.table.State.GameState = gs
 		go te.emitErrorEvent("OnGameErrorUpdated", "", err)
 	})
-	te.game.OnAntesReceived(func(gs *pokerface.GameState) {
+	te.game.OnAntesReceived(func(gs *pokerlib.GameState) {
 		for gpIdx, p := range gs.Players {
 			if playerIdx := te.table.FindPlayerIndexFromGamePlayerIndex(gpIdx); playerIdx != UnsetValue {
 				player := te.table.State.PlayerStates[playerIdx]
@@ -199,7 +199,7 @@ func (te *tableEngine) startGame() error {
 			}
 		}
 	})
-	te.game.OnBlindsReceived(func(gs *pokerface.GameState) {
+	te.game.OnBlindsReceived(func(gs *pokerlib.GameState) {
 		for gpIdx, p := range gs.Players {
 			for _, pos := range p.Positions {
 				if funk.Contains([]string{Position_SB, Position_BB}, pos) {
@@ -212,7 +212,7 @@ func (te *tableEngine) startGame() error {
 			}
 		}
 	})
-	te.game.OnGameRoundClosed(func(gs *pokerface.GameState) {
+	te.game.OnGameRoundClosed(func(gs *pokerlib.GameState) {
 		te.table.State.CurrentActionEndAt = 0
 	})
 

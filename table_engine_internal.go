@@ -4,7 +4,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/d-protocol/pokerface"
+	"github.com/d-protocol/pokerlib"
 	"github.com/d-protocol/pokertable/seat_manager"
 	"github.com/d-protocol/syncsaga"
 	"github.com/thoas/go-funk"
@@ -43,21 +43,21 @@ func (te *tableEngine) delay(interval int, fn func() error) error {
 	return err
 }
 
-func (te *tableEngine) updateGameState(gs *pokerface.GameState) {
+func (te *tableEngine) updateGameState(gs *pokerlib.GameState) {
 	te.table.State.GameState = gs
 
 	if te.table.State.Status == TableStateStatus_TableGamePlaying {
 		te.updateCurrentPlayerGameStatistics(gs)
 	}
 
-	event, ok := pokerface.GameEventBySymbol[gs.Status.CurrentEvent]
+	event, ok := pokerlib.GameEventBySymbol[gs.Status.CurrentEvent]
 	if !ok {
 		te.emitErrorEvent("handle updateGameState", "", ErrGameUnknownEvent)
 		return
 	}
 
 	switch event {
-	case pokerface.GameEvent_GameClosed:
+	case pokerlib.GameEvent_GameClosed:
 		if err := te.onGameClosed(); err != nil {
 			te.emitErrorEvent("onGameClosed", "", err)
 		}
@@ -65,16 +65,16 @@ func (te *tableEngine) updateGameState(gs *pokerface.GameState) {
 		te.updateCurrentActionEndAt(event, gs)
 		te.emitEvent(gs.Status.CurrentEvent, "")
 		te.emitTableStateEvent(TableStateEvent_GameUpdated)
-		if event == pokerface.GameEvent_RoundClosed {
+		if event == pokerlib.GameEvent_RoundClosed {
 			te.table.State.LastPlayerGameAction = nil
 		}
 	}
 }
 
-func (te *tableEngine) updateCurrentActionEndAt(event pokerface.GameEvent, gs *pokerface.GameState) {
+func (te *tableEngine) updateCurrentActionEndAt(event pokerlib.GameEvent, gs *pokerlib.GameState) {
 	p := gs.GetPlayer(gs.Status.CurrentPlayer)
 	validRounds := []string{GameRound_Preflop, GameRound_Flop, GameRound_Turn, GameRound_River}
-	validRoundState := te.table.State.Status == TableStateStatus_TableGamePlaying && event == pokerface.GameEvent_RoundStarted && funk.Contains(validRounds, gs.Status.Round)
+	validRoundState := te.table.State.Status == TableStateStatus_TableGamePlaying && event == pokerlib.GameEvent_RoundStarted && funk.Contains(validRounds, gs.Status.Round)
 	validActions := []string{WagerAction_Call, WagerAction_Raise, WagerAction_AllIn, WagerAction_Check, WagerAction_Fold, WagerAction_Bet}
 
 	isActionValid := true
@@ -151,7 +151,7 @@ func (te *tableEngine) calcLeavePlayers(status TableStateStatus, leavePlayerIDs 
 	return newPlayerStates, newSeatMap, newGamePlayerIndexes
 }
 
-func (te *tableEngine) createPlayerGameAction(playerID string, playerIdx int, action string, chips int64, player *pokerface.PlayerState) *TablePlayerGameAction {
+func (te *tableEngine) createPlayerGameAction(playerID string, playerIdx int, action string, chips int64, player *pokerlib.PlayerState) *TablePlayerGameAction {
 	pga := &TablePlayerGameAction{
 		CompetitionID: te.table.Meta.CompetitionID,
 		TableID:       te.table.ID,

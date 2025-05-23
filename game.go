@@ -5,7 +5,7 @@ import (
 	"errors"
 	"sync"
 
-	"github.com/d-protocol/pokerface"
+	"github.com/d-protocol/pokerlib"
 	"github.com/d-protocol/syncsaga"
 	"github.com/thoas/go-funk"
 )
@@ -19,50 +19,50 @@ var (
 
 type Game interface {
 	// Events
-	OnAntesReceived(func(*pokerface.GameState))
-	OnBlindsReceived(func(*pokerface.GameState))
-	OnGameStateUpdated(func(*pokerface.GameState))
-	OnGameRoundClosed(func(*pokerface.GameState))
-	OnGameErrorUpdated(func(*pokerface.GameState, error))
+	OnAntesReceived(func(*pokerlib.GameState))
+	OnBlindsReceived(func(*pokerlib.GameState))
+	OnGameStateUpdated(func(*pokerlib.GameState))
+	OnGameRoundClosed(func(*pokerlib.GameState))
+	OnGameErrorUpdated(func(*pokerlib.GameState, error))
 
 	// Others
-	GetGameState() *pokerface.GameState
-	Start() (*pokerface.GameState, error)
-	Next() (*pokerface.GameState, error)
+	GetGameState() *pokerlib.GameState
+	Start() (*pokerlib.GameState, error)
+	Next() (*pokerlib.GameState, error)
 
 	// Group Actions
-	ReadyForAll() (*pokerface.GameState, error)
-	PayAnte() (*pokerface.GameState, error)
-	PayBlinds() (*pokerface.GameState, error)
+	ReadyForAll() (*pokerlib.GameState, error)
+	PayAnte() (*pokerlib.GameState, error)
+	PayBlinds() (*pokerlib.GameState, error)
 
 	// Single Actions
-	Ready(playerIdx int) (*pokerface.GameState, error)
-	Pay(playerIdx int, chips int64) (*pokerface.GameState, error)
-	Pass(playerIdx int) (*pokerface.GameState, error)
-	Fold(playerIdx int) (*pokerface.GameState, error)
-	Check(playerIdx int) (*pokerface.GameState, error)
-	Call(playerIdx int) (*pokerface.GameState, error)
-	Allin(playerIdx int) (*pokerface.GameState, error)
-	Bet(playerIdx int, chips int64) (*pokerface.GameState, error)
-	Raise(playerIdx int, chipLevel int64) (*pokerface.GameState, error)
+	Ready(playerIdx int) (*pokerlib.GameState, error)
+	Pay(playerIdx int, chips int64) (*pokerlib.GameState, error)
+	Pass(playerIdx int) (*pokerlib.GameState, error)
+	Fold(playerIdx int) (*pokerlib.GameState, error)
+	Check(playerIdx int) (*pokerlib.GameState, error)
+	Call(playerIdx int) (*pokerlib.GameState, error)
+	Allin(playerIdx int) (*pokerlib.GameState, error)
+	Bet(playerIdx int, chips int64) (*pokerlib.GameState, error)
+	Raise(playerIdx int, chipLevel int64) (*pokerlib.GameState, error)
 }
 
 type game struct {
 	backend            GameBackend
-	gs                 *pokerface.GameState
-	opts               *pokerface.GameOptions
+	gs                 *pokerlib.GameState
+	opts               *pokerlib.GameOptions
 	rg                 *syncsaga.ReadyGroup
 	mu                 sync.RWMutex
 	isClosed           bool
-	incomingStates     chan *pokerface.GameState
-	onAntesReceived    func(*pokerface.GameState)
-	onBlindsReceived   func(*pokerface.GameState)
-	onGameStateUpdated func(*pokerface.GameState)
-	onGameRoundClosed  (func(*pokerface.GameState))
-	onGameErrorUpdated func(*pokerface.GameState, error)
+	incomingStates     chan *pokerlib.GameState
+	onAntesReceived    func(*pokerlib.GameState)
+	onBlindsReceived   func(*pokerlib.GameState)
+	onGameStateUpdated func(*pokerlib.GameState)
+	onGameRoundClosed  (func(*pokerlib.GameState))
+	onGameErrorUpdated func(*pokerlib.GameState, error)
 }
 
-func NewGame(backend GameBackend, opts *pokerface.GameOptions) *game {
+func NewGame(backend GameBackend, opts *pokerlib.GameOptions) *game {
 	rg := syncsaga.NewReadyGroup(
 		syncsaga.WithTimeout(17, func(rg *syncsaga.ReadyGroup) {
 			// Auto Ready By Default
@@ -78,40 +78,40 @@ func NewGame(backend GameBackend, opts *pokerface.GameOptions) *game {
 		backend:            backend,
 		opts:               opts,
 		rg:                 rg,
-		incomingStates:     make(chan *pokerface.GameState, 1024),
-		onAntesReceived:    func(gs *pokerface.GameState) {},
-		onBlindsReceived:   func(gs *pokerface.GameState) {},
-		onGameStateUpdated: func(gs *pokerface.GameState) {},
-		onGameRoundClosed:  func(*pokerface.GameState) {},
-		onGameErrorUpdated: func(gs *pokerface.GameState, err error) {},
+		incomingStates:     make(chan *pokerlib.GameState, 1024),
+		onAntesReceived:    func(gs *pokerlib.GameState) {},
+		onBlindsReceived:   func(gs *pokerlib.GameState) {},
+		onGameStateUpdated: func(gs *pokerlib.GameState) {},
+		onGameRoundClosed:  func(*pokerlib.GameState) {},
+		onGameErrorUpdated: func(gs *pokerlib.GameState, err error) {},
 	}
 }
 
-func (g *game) OnAntesReceived(fn func(*pokerface.GameState)) {
+func (g *game) OnAntesReceived(fn func(*pokerlib.GameState)) {
 	g.onAntesReceived = fn
 }
 
-func (g *game) OnBlindsReceived(fn func(*pokerface.GameState)) {
+func (g *game) OnBlindsReceived(fn func(*pokerlib.GameState)) {
 	g.onBlindsReceived = fn
 }
 
-func (g *game) OnGameStateUpdated(fn func(*pokerface.GameState)) {
+func (g *game) OnGameStateUpdated(fn func(*pokerlib.GameState)) {
 	g.onGameStateUpdated = fn
 }
 
-func (g *game) OnGameRoundClosed(fn func(*pokerface.GameState)) {
+func (g *game) OnGameRoundClosed(fn func(*pokerlib.GameState)) {
 	g.onGameRoundClosed = fn
 }
 
-func (g *game) OnGameErrorUpdated(fn func(*pokerface.GameState, error)) {
+func (g *game) OnGameErrorUpdated(fn func(*pokerlib.GameState, error)) {
 	g.onGameErrorUpdated = fn
 }
 
-func (g *game) GetGameState() *pokerface.GameState {
+func (g *game) GetGameState() *pokerlib.GameState {
 	return g.gs
 }
 
-func (g *game) Start() (*pokerface.GameState, error) {
+func (g *game) Start() (*pokerlib.GameState, error) {
 	g.runGameStateUpdater()
 
 	gs, err := g.backend.CreateGame(g.opts)
@@ -123,7 +123,7 @@ func (g *game) Start() (*pokerface.GameState, error) {
 	return g.GetGameState(), nil
 }
 
-func (g *game) Next() (*pokerface.GameState, error) {
+func (g *game) Next() (*pokerlib.GameState, error) {
 	gs, err := g.backend.Next(g.gs)
 	if err != nil {
 		return g.GetGameState(), err
@@ -133,7 +133,7 @@ func (g *game) Next() (*pokerface.GameState, error) {
 	return g.GetGameState(), nil
 }
 
-func (g *game) ReadyForAll() (*pokerface.GameState, error) {
+func (g *game) ReadyForAll() (*pokerlib.GameState, error) {
 	gs, err := g.backend.ReadyForAll(g.gs)
 	if err != nil {
 		return g.GetGameState(), err
@@ -143,7 +143,7 @@ func (g *game) ReadyForAll() (*pokerface.GameState, error) {
 	return g.GetGameState(), nil
 }
 
-func (g *game) PayAnte() (*pokerface.GameState, error) {
+func (g *game) PayAnte() (*pokerlib.GameState, error) {
 	gs, err := g.backend.PayAnte(g.gs)
 	if err != nil {
 		return g.GetGameState(), err
@@ -153,7 +153,7 @@ func (g *game) PayAnte() (*pokerface.GameState, error) {
 	return g.GetGameState(), nil
 }
 
-func (g *game) PayBlinds() (*pokerface.GameState, error) {
+func (g *game) PayBlinds() (*pokerlib.GameState, error) {
 	gs, err := g.backend.PayBlinds(g.gs)
 	if err != nil {
 		return g.GetGameState(), err
@@ -163,7 +163,7 @@ func (g *game) PayBlinds() (*pokerface.GameState, error) {
 	return g.GetGameState(), nil
 }
 
-func (g *game) Ready(playerIdx int) (*pokerface.GameState, error) {
+func (g *game) Ready(playerIdx int) (*pokerlib.GameState, error) {
 	if err := g.validateActionMove(playerIdx, Action_Ready); err != nil {
 		return g.GetGameState(), err
 	}
@@ -172,21 +172,21 @@ func (g *game) Ready(playerIdx int) (*pokerface.GameState, error) {
 	return g.GetGameState(), nil
 }
 
-func (g *game) Pay(playerIdx int, chips int64) (*pokerface.GameState, error) {
+func (g *game) Pay(playerIdx int, chips int64) (*pokerlib.GameState, error) {
 	if err := g.validateActionMove(playerIdx, Action_Pay); err != nil {
 		return g.GetGameState(), err
 	}
 
-	event, ok := pokerface.GameEventBySymbol[g.gs.Status.CurrentEvent]
+	event, ok := pokerlib.GameEventBySymbol[g.gs.Status.CurrentEvent]
 	if !ok {
 		return g.GetGameState(), ErrGameUnknownEvent
 	}
 
 	// For blinds
 	switch event {
-	case pokerface.GameEvent_AnteRequested:
+	case pokerlib.GameEvent_AnteRequested:
 		fallthrough
-	case pokerface.GameEvent_BlindsRequested:
+	case pokerlib.GameEvent_BlindsRequested:
 		g.rg.Ready(int64(playerIdx))
 		return g.GetGameState(), nil
 	}
@@ -200,7 +200,7 @@ func (g *game) Pay(playerIdx int, chips int64) (*pokerface.GameState, error) {
 	return g.GetGameState(), nil
 }
 
-func (g *game) Pass(playerIdx int) (*pokerface.GameState, error) {
+func (g *game) Pass(playerIdx int) (*pokerlib.GameState, error) {
 	if err := g.validatePlayMove(playerIdx); err != nil {
 		return g.GetGameState(), err
 	}
@@ -214,7 +214,7 @@ func (g *game) Pass(playerIdx int) (*pokerface.GameState, error) {
 	return g.GetGameState(), nil
 }
 
-func (g *game) Fold(playerIdx int) (*pokerface.GameState, error) {
+func (g *game) Fold(playerIdx int) (*pokerlib.GameState, error) {
 	if err := g.validatePlayMove(playerIdx); err != nil {
 		return g.GetGameState(), err
 	}
@@ -228,7 +228,7 @@ func (g *game) Fold(playerIdx int) (*pokerface.GameState, error) {
 	return g.GetGameState(), nil
 }
 
-func (g *game) Check(playerIdx int) (*pokerface.GameState, error) {
+func (g *game) Check(playerIdx int) (*pokerlib.GameState, error) {
 	if err := g.validatePlayMove(playerIdx); err != nil {
 		return g.GetGameState(), err
 	}
@@ -242,7 +242,7 @@ func (g *game) Check(playerIdx int) (*pokerface.GameState, error) {
 	return g.GetGameState(), nil
 }
 
-func (g *game) Call(playerIdx int) (*pokerface.GameState, error) {
+func (g *game) Call(playerIdx int) (*pokerlib.GameState, error) {
 	if err := g.validatePlayMove(playerIdx); err != nil {
 		return g.GetGameState(), err
 	}
@@ -256,7 +256,7 @@ func (g *game) Call(playerIdx int) (*pokerface.GameState, error) {
 	return g.GetGameState(), nil
 }
 
-func (g *game) Allin(playerIdx int) (*pokerface.GameState, error) {
+func (g *game) Allin(playerIdx int) (*pokerlib.GameState, error) {
 	if err := g.validatePlayMove(playerIdx); err != nil {
 		return g.GetGameState(), err
 	}
@@ -270,7 +270,7 @@ func (g *game) Allin(playerIdx int) (*pokerface.GameState, error) {
 	return g.GetGameState(), nil
 }
 
-func (g *game) Bet(playerIdx int, chips int64) (*pokerface.GameState, error) {
+func (g *game) Bet(playerIdx int, chips int64) (*pokerlib.GameState, error) {
 	if err := g.validatePlayMove(playerIdx); err != nil {
 		return g.GetGameState(), err
 	}
@@ -284,7 +284,7 @@ func (g *game) Bet(playerIdx int, chips int64) (*pokerface.GameState, error) {
 	return g.GetGameState(), nil
 }
 
-func (g *game) Raise(playerIdx int, chipLevel int64) (*pokerface.GameState, error) {
+func (g *game) Raise(playerIdx int, chipLevel int64) (*pokerlib.GameState, error) {
 	if err := g.validatePlayMove(playerIdx); err != nil {
 		return g.GetGameState(), err
 	}
@@ -334,20 +334,20 @@ func (g *game) runGameStateUpdater() {
 	}()
 }
 
-func (g *game) cloneState(gs *pokerface.GameState) *pokerface.GameState {
+func (g *game) cloneState(gs *pokerlib.GameState) *pokerlib.GameState {
 	// clone table state
 	data, err := json.Marshal(gs)
 	if err != nil {
 		return nil
 	}
 
-	var state pokerface.GameState
+	var state pokerlib.GameState
 	json.Unmarshal(data, &state)
 
 	return &state
 }
 
-func (g *game) updateGameState(gs *pokerface.GameState) {
+func (g *game) updateGameState(gs *pokerlib.GameState) {
 	g.mu.Lock()
 	defer g.mu.Unlock()
 
@@ -361,19 +361,19 @@ func (g *game) updateGameState(gs *pokerface.GameState) {
 	g.incomingStates <- state
 }
 
-func (g *game) handleGameState(gs *pokerface.GameState) {
-	event, ok := pokerface.GameEventBySymbol[gs.Status.CurrentEvent]
+func (g *game) handleGameState(gs *pokerlib.GameState) {
+	event, ok := pokerlib.GameEventBySymbol[gs.Status.CurrentEvent]
 	if !ok {
 		g.onGameErrorUpdated(gs, ErrGameUnknownEvent)
 		return
 	}
 
-	handlers := map[pokerface.GameEvent]func(*pokerface.GameState){
-		pokerface.GameEvent_ReadyRequested:  g.onReadyRequested,
-		pokerface.GameEvent_AnteRequested:   g.onAnteRequested,
-		pokerface.GameEvent_BlindsRequested: g.onBlindsRequested,
-		pokerface.GameEvent_RoundClosed:     g.onRoundClosed,
-		pokerface.GameEvent_GameClosed:      g.onGameClosed,
+	handlers := map[pokerlib.GameEvent]func(*pokerlib.GameState){
+		pokerlib.GameEvent_ReadyRequested:  g.onReadyRequested,
+		pokerlib.GameEvent_AnteRequested:   g.onAnteRequested,
+		pokerlib.GameEvent_BlindsRequested: g.onBlindsRequested,
+		pokerlib.GameEvent_RoundClosed:     g.onRoundClosed,
+		pokerlib.GameEvent_GameClosed:      g.onGameClosed,
 	}
 	if handler, exist := handlers[event]; exist {
 		handler(gs)
@@ -381,7 +381,7 @@ func (g *game) handleGameState(gs *pokerface.GameState) {
 	g.onGameStateUpdated(gs)
 }
 
-func (g *game) onReadyRequested(gs *pokerface.GameState) {
+func (g *game) onReadyRequested(gs *pokerlib.GameState) {
 	// Preparing ready group to wait for all player ready
 	g.rg.Stop()
 	g.rg.OnCompleted(func(rg *syncsaga.ReadyGroup) {
@@ -411,7 +411,7 @@ func (g *game) onReadyRequested(gs *pokerface.GameState) {
 	g.rg.Start()
 }
 
-func (g *game) onAnteRequested(gs *pokerface.GameState) {
+func (g *game) onAnteRequested(gs *pokerlib.GameState) {
 	if gs.Meta.Ante == 0 {
 		return
 	}
@@ -449,7 +449,7 @@ func (g *game) onAnteRequested(gs *pokerface.GameState) {
 	g.rg.Start()
 }
 
-func (g *game) onBlindsRequested(gs *pokerface.GameState) {
+func (g *game) onBlindsRequested(gs *pokerlib.GameState) {
 	// Preparing ready group to wait for blinds
 	g.rg.Stop()
 	g.rg.OnCompleted(func(rg *syncsaga.ReadyGroup) {
@@ -490,7 +490,7 @@ func (g *game) onBlindsRequested(gs *pokerface.GameState) {
 	g.rg.Start()
 }
 
-func (g *game) onRoundClosed(gs *pokerface.GameState) {
+func (g *game) onRoundClosed(gs *pokerlib.GameState) {
 	g.onGameRoundClosed(gs)
 
 	// Next round automatically
@@ -503,7 +503,7 @@ func (g *game) onRoundClosed(gs *pokerface.GameState) {
 	g.updateGameState(gs)
 }
 
-func (g *game) onGameClosed(gs *pokerface.GameState) {
+func (g *game) onGameClosed(gs *pokerlib.GameState) {
 	if g.isClosed {
 		return
 	}

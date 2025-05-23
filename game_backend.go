@@ -1,19 +1,19 @@
 package pokertable
 
-import "github.com/d-protocol/pokerface"
+import "github.com/d-protocol/pokerlib"
 
 type GameBackend interface {
-	CreateGame(opts *pokerface.GameOptions) (*pokerface.GameState, error)
-	ReadyForAll(gs *pokerface.GameState) (*pokerface.GameState, error)
-	PayAnte(gs *pokerface.GameState) (*pokerface.GameState, error)
-	PayBlinds(gs *pokerface.GameState) (*pokerface.GameState, error)
-	Next(gs *pokerface.GameState) (*pokerface.GameState, error)
-	Pay(gs *pokerface.GameState, chips int64) (*pokerface.GameState, error)
-	Fold(gs *pokerface.GameState) (*pokerface.GameState, error)
-	Check(gs *pokerface.GameState) (*pokerface.GameState, error)
-	Call(gs *pokerface.GameState) (*pokerface.GameState, error)
-	Allin(gs *pokerface.GameState) (*pokerface.GameState, error)
-	Bet(gs *pokerface.GameState, chips int64) (*pokerface.GameState, error)
-	Raise(gs *pokerface.GameState, chipLevel int64) (*pokerface.GameState, error)
-	Pass(gs *pokerface.GameState) (*pokerface.GameState, error)
+	CreateGame(opts *pokerlib.GameOptions) (*pokerlib.GameState, error)
+	ReadyForAll(gs *pokerlib.GameState) (*pokerlib.GameState, error)
+	PayAnte(gs *pokerlib.GameState) (*pokerlib.GameState, error)
+	PayBlinds(gs *pokerlib.GameState) (*pokerlib.GameState, error)
+	Next(gs *pokerlib.GameState) (*pokerlib.GameState, error)
+	Pay(gs *pokerlib.GameState, chips int64) (*pokerlib.GameState, error)
+	Fold(gs *pokerlib.GameState) (*pokerlib.GameState, error)
+	Check(gs *pokerlib.GameState) (*pokerlib.GameState, error)
+	Call(gs *pokerlib.GameState) (*pokerlib.GameState, error)
+	Allin(gs *pokerlib.GameState) (*pokerlib.GameState, error)
+	Bet(gs *pokerlib.GameState, chips int64) (*pokerlib.GameState, error)
+	Raise(gs *pokerlib.GameState, chipLevel int64) (*pokerlib.GameState, error)
+	Pass(gs *pokerlib.GameState) (*pokerlib.GameState, error)
 }

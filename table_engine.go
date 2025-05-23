@@ -38,7 +38,7 @@ type TableEngine interface {
 	OnReadyOpenFirstTableGame(fn func(competitionID, tableID string, gameCount int, playerStates []*TablePlayerState)) // 開始第一手遊戲監聽器
 
 	// Other Actions
-	ReleaseTable() error // 結束釋放桌次
+	ReleaseTable() error
 
 	// Table Actions
 	GetTable() *Table                                                                             // 取得桌次

@@ -4,7 +4,7 @@ import (
 	"math/rand"
 	"time"
 
-	"github.com/d-protocol/pokerface"
+	"github.com/d-protocol/pokerlib"
 	"github.com/d-protocol/pokertable"
 	"github.com/d-protocol/timebank"
 )
@@ -156,7 +156,7 @@ func (br *botRunner) UpdateTableState(table *pokertable.Table) error {
 	return nil
 }
 
-func (br *botRunner) requestMove(gs *pokerface.GameState, playerIdx int) error {
+func (br *botRunner) requestMove(gs *pokerlib.GameState, playerIdx int) error {
 
 	//fmt.Println(br.tableInfo.State.GameState.Status.Round, br.gamePlayerIdx, gs.Players[br.gamePlayerIdx].AllowedActions)
 	/*
@@ -175,12 +175,12 @@ func (br *botRunner) requestMove(gs *pokerface.GameState, playerIdx int) error {
 
 		// Pay for ante and blinds
 		switch gs.Status.CurrentEvent {
-		case pokerface.GameEventSymbols[pokerface.GameEvent_AnteRequested]:
+		case pokerlib.GameEventSymbols[pokerlib.GameEvent_AnteRequested]:
 
 			// Ante
 			return br.actions.Pay(gs.Meta.Ante)
 
-		case pokerface.GameEventSymbols[pokerface.GameEvent_BlindsRequested]:
+		case pokerlib.GameEventSymbols[pokerlib.GameEvent_BlindsRequested]:
 
 			// blinds
 			if gs.HasPosition(playerIdx, "sb") {
@@ -256,7 +256,7 @@ func (br *botRunner) calcAction(actions []string) string {
 	return actions[len(actions)-1]
 }
 
-func (br *botRunner) requestAI(gs *pokerface.GameState, playerIdx int) error {
+func (br *botRunner) requestAI(gs *pokerlib.GameState, playerIdx int) error {
 
 	player := gs.Players[playerIdx]
 

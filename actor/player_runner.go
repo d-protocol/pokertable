@@ -3,7 +3,7 @@ package actor
 import (
 	"time"
 
-	"github.com/d-protocol/pokerface"
+	"github.com/d-protocol/pokerlib"
 	"github.com/d-protocol/pokertable"
 	"github.com/d-protocol/timebank"
 )
@@ -117,7 +117,7 @@ func (pr *playerRunner) OnTableStateUpdated(fn func(*pokertable.Table)) error {
 	return nil
 }
 
-func (pr *playerRunner) requestMove(gs *pokerface.GameState, playerIdx int) error {
+func (pr *playerRunner) requestMove(gs *pokerlib.GameState, playerIdx int) error {
 
 	// Do pass automatically
 	if gs.HasAction(playerIdx, "pass") {
@@ -147,7 +147,7 @@ func (pr *playerRunner) requestMove(gs *pokerface.GameState, playerIdx int) erro
 	})
 }
 
-func (pr *playerRunner) automate(gs *pokerface.GameState, playerIdx int) error {
+func (pr *playerRunner) automate(gs *pokerlib.GameState, playerIdx int) error {
 
 	// Default actions for automation when player has no response
 	if gs.HasAction(playerIdx, "ready") {
@@ -160,12 +160,12 @@ func (pr *playerRunner) automate(gs *pokerface.GameState, playerIdx int) error {
 
 	// Pay for ante and blinds
 	switch gs.Status.CurrentEvent {
-	case pokerface.GameEventSymbols[pokerface.GameEvent_AnteRequested]:
+	case pokerlib.GameEventSymbols[pokerlib.GameEvent_AnteRequested]:
 
 		// Ante
 		return pr.actions.Pay(gs.Meta.Ante)
 
-	case pokerface.GameEventSymbols[pokerface.GameEvent_BlindsRequested]:
+	case pokerlib.GameEventSymbols[pokerlib.GameEvent_BlindsRequested]:
 
 		// blinds
 		if gs.HasPosition(playerIdx, "sb") {

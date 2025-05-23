@@ -3,7 +3,7 @@ package pokertable
 import (
 	"fmt"
 
-	"github.com/d-protocol/pokerface"
+	"github.com/d-protocol/pokerlib"
 	"github.com/thoas/go-funk"
 )
 
@@ -140,7 +140,7 @@ func (te *tableEngine) refreshThreeBet(playerState *TablePlayerState, playerIdx 
 	}
 }
 
-func (te *tableEngine) updateCurrentPlayerGameStatistics(gs *pokerface.GameState) {
+func (te *tableEngine) updateCurrentPlayerGameStatistics(gs *pokerlib.GameState) {
 	te.lock.Lock()
 	defer te.lock.Unlock()
 
@@ -195,7 +195,7 @@ func (te *tableEngine) updateCurrentPlayerGameStatistics(gs *pokerface.GameState
 }
 
 // isVPIPChance: preflop 時還沒入池 (not VPIP)
-func (te *tableEngine) isVPIPChance(gamePlayerIdx int, gs *pokerface.GameState) bool {
+func (te *tableEngine) isVPIPChance(gamePlayerIdx int, gs *pokerlib.GameState) bool {
 	if !te.validateGameStatisticGameState(gamePlayerIdx, gs) {
 		return false
 	}
@@ -218,7 +218,7 @@ func (te *tableEngine) isVPIPChance(gamePlayerIdx int, gs *pokerface.GameState) 
 }
 
 // isPFRChance: preflop 時，並且前位玩家皆跟注或棄牌
-func (te *tableEngine) isPFRChance(gamePlayerIdx int, gs *pokerface.GameState) bool {
+func (te *tableEngine) isPFRChance(gamePlayerIdx int, gs *pokerlib.GameState) bool {
 	if !te.validateGameStatisticGameState(gamePlayerIdx, gs) {
 		return false
 	}
@@ -256,7 +256,7 @@ func (te *tableEngine) isPFRChance(gamePlayerIdx int, gs *pokerface.GameState) b
 /*
 isATSChance preflop 時，SB/CO/Dealer 玩家在前位已行動玩家皆棄牌
 */
-func (te *tableEngine) isATSChance(gamePlayerIdx int, gs *pokerface.GameState) bool {
+func (te *tableEngine) isATSChance(gamePlayerIdx int, gs *pokerlib.GameState) bool {
 	if !te.validateGameStatisticGameState(gamePlayerIdx, gs) {
 		return false
 	}
@@ -287,7 +287,7 @@ func (te *tableEngine) isATSChance(gamePlayerIdx int, gs *pokerface.GameState) b
 }
 
 // is3BChance: preflop 時前位只有一位玩家進行加注，且其餘玩家皆跟注或棄牌
-func (te *tableEngine) is3BChance(gamePlayerIdx int, gs *pokerface.GameState) bool {
+func (te *tableEngine) is3BChance(gamePlayerIdx int, gs *pokerlib.GameState) bool {
 	if !te.validateGameRoundChance(gs.Status.Round, GameStatisticRound_ThreeBet) {
 		return false
 	}
@@ -317,7 +317,7 @@ func (te *tableEngine) is3BChance(gamePlayerIdx int, gs *pokerface.GameState) bo
 }
 
 // IsFt3BChance: preflop 時當玩家在加注或跟注後遇到其他玩家的3-Bet（Re-raise）
-func (te *tableEngine) IsFt3BChance(gamePlayerIdx int, players []*TablePlayerState, gs *pokerface.GameState) bool {
+func (te *tableEngine) IsFt3BChance(gamePlayerIdx int, players []*TablePlayerState, gs *pokerlib.GameState) bool {
 	if !te.validateGameStatisticGameState(gamePlayerIdx, gs) {
 		return false
 	}
@@ -345,7 +345,7 @@ func (te *tableEngine) IsFt3BChance(gamePlayerIdx int, players []*TablePlayerSta
 	return false
 }
 
-func (te *tableEngine) isCheckRaiseChance(gamePlayerIdx int, gs *pokerface.GameState) bool {
+func (te *tableEngine) isCheckRaiseChance(gamePlayerIdx int, gs *pokerlib.GameState) bool {
 	if !te.validateGameStatisticGameState(gamePlayerIdx, gs) {
 		return false
 	}
@@ -371,7 +371,7 @@ func (te *tableEngine) isCheckRaiseChance(gamePlayerIdx int, gs *pokerface.GameS
 	return false
 }
 
-func (te *tableEngine) isCBetChance(gamePlayerIdx int, gs *pokerface.GameState) bool {
+func (te *tableEngine) isCBetChance(gamePlayerIdx int, gs *pokerlib.GameState) bool {
 	if !te.validateGameStatisticGameState(gamePlayerIdx, gs) {
 		return false
 	}
@@ -395,7 +395,7 @@ func (te *tableEngine) isCBetChance(gamePlayerIdx int, gs *pokerface.GameState) 
 	return false
 }
 
-func (te *tableEngine) isFtCBChance(gamePlayerIdx int, players []*TablePlayerState, gs *pokerface.GameState) bool {
+func (te *tableEngine) isFtCBChance(gamePlayerIdx int, players []*TablePlayerState, gs *pokerlib.GameState) bool {
 	if !te.validateGameStatisticGameState(gamePlayerIdx, gs) {
 		return false
 	}
@@ -423,8 +423,8 @@ func (te *tableEngine) isFtCBChance(gamePlayerIdx int, players []*TablePlayerSta
 	return false
 }
 
-func (te *tableEngine) validateGameStatisticGameState(gamePlayerIdx int, gs *pokerface.GameState) bool {
-	validEvent := pokerface.GameEventSymbols[pokerface.GameEvent_Started]
+func (te *tableEngine) validateGameStatisticGameState(gamePlayerIdx int, gs *pokerlib.GameState) bool {
+	validEvent := pokerlib.GameEventSymbols[pokerlib.GameEvent_Started]
 	validRounds := []string{
 		GameRound_Preflop,
 		GameRound_Flop,

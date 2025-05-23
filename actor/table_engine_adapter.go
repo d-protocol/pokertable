@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"time"
 
-	"github.com/d-protocol/pokerface"
+	"github.com/d-protocol/pokerlib"
 	"github.com/d-protocol/pokertable"
 )
 
@@ -45,7 +45,7 @@ func (tea *tableEngineAdapter) UpdateTableState(tableInfo *pokertable.Table) err
 	return tea.actor.UpdateTableState(&t)
 }
 
-func (tea *tableEngineAdapter) GetGameState() *pokerface.GameState {
+func (tea *tableEngineAdapter) GetGameState() *pokerlib.GameState {
 	return tea.table.State.GameState
 }
 

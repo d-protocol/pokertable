@@ -6,7 +6,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/d-protocol/pokerface"
+	"github.com/d-protocol/pokerlib"
 	"github.com/d-protocol/pokertable"
 	"github.com/stretchr/testify/assert"
 	"github.com/thoas/go-funk"
@@ -40,24 +40,24 @@ func TestTableGame_Preflop_Walk(t *testing.T) {
 			DebugPrintTableGameOpened(*table)
 		case pokertable.TableStateStatus_TableGamePlaying:
 			t.Logf("[%s] %s:", table.State.GameState.Status.Round, table.State.GameState.Status.CurrentEvent)
-			event, ok := pokerface.GameEventBySymbol[table.State.GameState.Status.CurrentEvent]
+			event, ok := pokerlib.GameEventBySymbol[table.State.GameState.Status.CurrentEvent]
 			if !ok {
 				return
 			}
 
 			switch event {
-			case pokerface.GameEvent_ReadyRequested:
+			case pokerlib.GameEvent_ReadyRequested:
 				for _, playerID := range playerIDs {
 					assert.Nil(t, tableEngine.PlayerReady(playerID), fmt.Sprintf("%s ready error", playerID))
 					t.Logf(fmt.Sprintf("%s ready", playerID))
 				}
-			case pokerface.GameEvent_AnteRequested:
+			case pokerlib.GameEvent_AnteRequested:
 				for _, playerID := range playerIDs {
 					ante := table.State.BlindState.Ante
 					assert.Nil(t, tableEngine.PlayerPay(playerID, ante), fmt.Sprintf("%s pay ante error", playerID))
 					t.Logf(fmt.Sprintf("%s pay ante %d", playerID, ante))
 				}
-			case pokerface.GameEvent_BlindsRequested:
+			case pokerlib.GameEvent_BlindsRequested:
 				blind := table.State.BlindState
 
 				// pay sb
@@ -69,7 +69,7 @@ func TestTableGame_Preflop_Walk(t *testing.T) {
 				bbPlayerID := findPlayerID(table, "bb")
 				assert.Nil(t, tableEngine.PlayerPay(bbPlayerID, blind.BB), fmt.Sprintf("%s pay bb error", bbPlayerID))
 				t.Logf(fmt.Sprintf("%s pay bb %d", bbPlayerID, blind.BB))
-			case pokerface.GameEvent_RoundStarted:
+			case pokerlib.GameEvent_RoundStarted:
 				playerID, actions := currentPlayerMove(table)
 				if funk.Contains(actions, "fold") {
 					t.Logf(fmt.Sprintf("%s's move: fold", playerID))
@@ -88,7 +88,7 @@ func TestTableGame_Preflop_Walk(t *testing.T) {
 
 			DebugPrintTableGameSettled(*table)
 
-			if table.State.GameState.Status.CurrentEvent == pokerface.GameEventSymbols[pokerface.GameEvent_GameClosed] {
+			if table.State.GameState.Status.CurrentEvent == pokerlib.GameEventSymbols[pokerlib.GameEvent_GameClosed] {
 				wg.Done()
 				return
 			}
